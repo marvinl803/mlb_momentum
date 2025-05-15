@@ -2,6 +2,7 @@ from games_id import GamesId
 from current_plays import CurrentPlays
 import pandas as pd
 from win_probability_calculation import WinProbabilityCalculator
+import matplotlib.pyplot as plt
 
 momentum_chart = {
     # Positive offensive plays
@@ -81,4 +82,40 @@ df['home_win_prob'] = df.apply(
 
 df['away_win_prob'] = 1 - df['home_win_prob']
 
-print(df.head(50))
+df = df.sort_values(by=['gamePk', 'inning', 'top_inning']).reset_index(drop=True)
+
+# Loop through each game
+for game_id, game_df in df.groupby('gamePk'):
+    # Set play index for current game only
+    game_df = game_df.reset_index(drop=True)
+    game_df['play_index'] = game_df.index
+
+    # Add readable inning-half label per play
+    game_df['inning_half'] = game_df.apply(
+        lambda r: f"Top {r['inning']}" if r['top_inning'] else f"Bot {r['inning']}", axis=1
+    )
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(game_df['play_index'], game_df['home_cumulative'], label='Home Momentum', color='blue', alpha=0.6)
+    plt.plot(game_df['play_index'], game_df['away_cumulative'], label='Away Momentum', color='red', alpha=0.6)
+    plt.plot(game_df['play_index'], game_df['home_win_prob'] * 100, label='Home Win Probability (%)', color='green', linestyle='--')
+
+    home_team = game_df.iloc[0]['home_team']
+    away_team = game_df.iloc[0]['away_team']
+
+    plt.title(f'Momentum & Win Probability\n{away_team} @ {home_team} (GamePk: {game_id})')
+    plt.xlabel('Play (Inning Half)')
+    plt.ylabel('Momentum / Win Probability')
+    plt.legend()
+    plt.grid(True)
+
+    # Set custom x-ticks with inning-half labels
+    xticks = game_df['play_index']
+    xlabels = game_df['inning_half']
+    
+    # Show every Nth label to avoid overcrowding
+    step = max(1, len(xlabels) // 20)
+    plt.xticks(ticks=xticks[::step], labels=xlabels[::step], rotation=45)
+
+    plt.tight_layout()
+    plt.show()
