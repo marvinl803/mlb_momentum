@@ -72,16 +72,12 @@ df['away_delta'] = df.apply(
 # 3) Cumulative positive sums
 df['home_cumulative'] = df.groupby('gamePk')['home_delta'].cumsum()
 df['away_cumulative'] = df.groupby('gamePk')['away_delta'].cumsum()
-
 df['momentum_diff'] = df['home_cumulative'] - df['away_cumulative']
-
 df['home_win_prob'] = df.apply(
     lambda r: wp_calc.weighted_win_probability(r['momentum_diff'], r['inning']),
     axis=1
 )
-
 df['away_win_prob'] = 1 - df['home_win_prob']
-
 df = df.sort_values(by=['gamePk', 'inning', 'top_inning']).reset_index(drop=True)
 
 # Loop through each game
